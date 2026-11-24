@@ -41,6 +41,9 @@ public class HumanBeingService {
     private HeroNamePolicy names;
 
     @Inject
+    private UniqueNameWrites uniqueNameWrites;
+
+    @Inject
     private Event<DataChangedEvent> dataChangedEvent;
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -59,13 +62,14 @@ public class HumanBeingService {
         return humanBeingMapper.toDto(findHuman(id));
     }
 
-    @Transactional(Transactional.TxType.REQUIRED)
     public HumanBeingDto create(CreateHumanBeingRequest request) {
-        names.requireAvailable(request.getName(), null);
-        Car car = resolveFreeCar(request.getCarId());
-        HumanBeing human = persistNew(request, car);
-        dataChangedEvent.fire(new DataChangedEvent("HumanBeing", human.getId(), ChangeType.CREATED));
-        return humanBeingMapper.toDto(human);
+        return uniqueNameWrites.run(() -> {
+            names.requireAvailable(request.getName(), null);
+            Car car = resolveFreeCar(request.getCarId());
+            HumanBeing human = persistNew(request, car);
+            dataChangedEvent.fire(new DataChangedEvent("HumanBeing", human.getId(), ChangeType.CREATED));
+            return humanBeingMapper.toDto(human);
+        });
     }
 
     HumanBeing persistNew(CreateHumanBeingRequest request, Car car) {
@@ -74,8 +78,11 @@ public class HumanBeingService {
         return human;
     }
 
-    @Transactional(Transactional.TxType.REQUIRED)
     public HumanBeingDto update(Long id, UpdateHumanBeingRequest request) {
+        return uniqueNameWrites.run(() -> updateInTransaction(id, request));
+    }
+
+    private HumanBeingDto updateInTransaction(Long id, UpdateHumanBeingRequest request) {
         HumanBeing human = findHuman(id);
         requireVersion(human, request.getVersion());
         names.requireAvailable(request.getName(), id);

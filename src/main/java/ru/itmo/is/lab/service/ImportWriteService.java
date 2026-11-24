@@ -10,7 +10,6 @@ import ru.itmo.is.lab.repository.CarRepository;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
 
@@ -29,9 +28,14 @@ public class ImportWriteService {
     private ImportHistoryService history;
     @Inject
     private HeroNamePolicy names;
+    @Inject
+    private UniqueNameWrites uniqueNameWrites;
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public int save(long operationId, List<ImportFileReader.Entry> entries) {
+        return uniqueNameWrites.run(() -> saveInTransaction(operationId, entries));
+    }
+
+    private int saveInTransaction(long operationId, List<ImportFileReader.Entry> entries) {
         boolean carsCreated = false;
         Set<String> occupied = names.occupiedNames();
         for (int index = 0; index < entries.size(); index++) {

@@ -7,6 +7,7 @@ import ru.itmo.is.lab.exception.CarNotAvailableException;
 import ru.itmo.is.lab.exception.HeroNameTakenException;
 import ru.itmo.is.lab.exception.InvalidCredentialsException;
 import ru.itmo.is.lab.exception.ResourceNotFoundException;
+import ru.itmo.is.lab.exception.SerializationConflictException;
 import ru.itmo.is.lab.exception.UsernameTakenException;
 import ru.itmo.is.lab.rest.dto.ErrorResponse;
 
@@ -192,6 +193,9 @@ public final class ErrorResponses {
         if (t instanceof HeroNameTakenException) {
             HeroNameTakenException conflict = (HeroNameTakenException) t;
             return error(409, conflict.getMessage(), Collections.singletonMap(conflict.getField(), conflict.getMessage()));
+        }
+        if (t instanceof SerializationConflictException) {
+            return error(409, t.getMessage());
         }
         if (t instanceof UsernameTakenException) {
             return usernameTaken(t.getMessage());
