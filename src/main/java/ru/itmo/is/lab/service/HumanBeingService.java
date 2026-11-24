@@ -59,10 +59,15 @@ public class HumanBeingService {
     @Transactional(Transactional.TxType.REQUIRED)
     public HumanBeingDto create(CreateHumanBeingRequest request) {
         Car car = resolveFreeCar(request.getCarId());
-        HumanBeing human = humanBeingMapper.toEntity(request, car);
-        humanBeingRepository.persist(human);
+        HumanBeing human = persistNew(request, car);
         dataChangedEvent.fire(new DataChangedEvent("HumanBeing", human.getId(), ChangeType.CREATED));
         return humanBeingMapper.toDto(human);
+    }
+
+    HumanBeing persistNew(CreateHumanBeingRequest request, Car car) {
+        HumanBeing human = humanBeingMapper.toEntity(request, car);
+        humanBeingRepository.persist(human);
+        return human;
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
