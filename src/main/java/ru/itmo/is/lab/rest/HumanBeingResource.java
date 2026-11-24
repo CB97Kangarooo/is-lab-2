@@ -4,6 +4,7 @@ import ru.itmo.is.lab.dto.CreateHumanBeingRequest;
 import ru.itmo.is.lab.dto.HumanBeingDto;
 import ru.itmo.is.lab.dto.Page;
 import ru.itmo.is.lab.dto.UpdateHumanBeingRequest;
+import ru.itmo.is.lab.exception.BadRequestException;
 import ru.itmo.is.lab.rest.dto.PageResponse;
 import ru.itmo.is.lab.service.HumanBeingService;
 
@@ -70,8 +71,11 @@ public class HumanBeingResource {
 
     @DELETE
     @Path("/{id: [0-9]+}")
-    public Response delete(@PathParam("id") long id) {
-        humanBeingService.delete(id);
+    public Response delete(@PathParam("id") long id, @QueryParam("version") Long version) {
+        if (version == null || version < 0) {
+            throw new BadRequestException("Укажите неотрицательную версию героя");
+        }
+        humanBeingService.delete(id, version);
         return Response.noContent().build();
     }
 }

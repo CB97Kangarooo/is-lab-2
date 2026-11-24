@@ -38,6 +38,9 @@ public class HumanBeingService {
     private HumanBeingMapper humanBeingMapper;
 
     @Inject
+    private HeroNamePolicy names;
+
+    @Inject
     private Event<DataChangedEvent> dataChangedEvent;
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -58,6 +61,7 @@ public class HumanBeingService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public HumanBeingDto create(CreateHumanBeingRequest request) {
+        names.requireAvailable(request.getName(), null);
         Car car = resolveFreeCar(request.getCarId());
         HumanBeing human = persistNew(request, car);
         dataChangedEvent.fire(new DataChangedEvent("HumanBeing", human.getId(), ChangeType.CREATED));
@@ -73,9 +77,8 @@ public class HumanBeingService {
     @Transactional(Transactional.TxType.REQUIRED)
     public HumanBeingDto update(Long id, UpdateHumanBeingRequest request) {
         HumanBeing human = findHuman(id);
-        if (!Objects.equals(request.getVersion(), human.getVersion())) {
-            throw new OptimisticLockException("Версия героя с id " + id + " устарела");
-        }
+        requireVersion(human, request.getVersion());
+        names.requireAvailable(request.getName(), id);
 
         updateCar(human, request.getCarId());
         humanBeingMapper.updateEntity(human, request);
@@ -85,10 +88,18 @@ public class HumanBeingService {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public void delete(Long id) {
+    public void delete(Long id, long version) {
         HumanBeing human = findHuman(id);
+        requireVersion(human, version);
         humanBeingRepository.remove(human);
+        humanBeingRepository.flush();
         dataChangedEvent.fire(new DataChangedEvent("HumanBeing", id, ChangeType.DELETED));
+    }
+
+    private static void requireVersion(HumanBeing human, Long expected) {
+        if (!Objects.equals(expected, human.getVersion())) {
+            throw new OptimisticLockException("Версия героя с id " + human.getId() + " устарела");
+        }
     }
 
     private HumanBeing findHuman(Long id) {

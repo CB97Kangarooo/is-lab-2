@@ -4,6 +4,7 @@ import ru.itmo.is.lab.entity.Mood;
 import ru.itmo.is.lab.entity.WeaponType;
 import ru.itmo.is.lab.exception.BadRequestException;
 import ru.itmo.is.lab.exception.CarNotAvailableException;
+import ru.itmo.is.lab.exception.HeroNameTakenException;
 import ru.itmo.is.lab.exception.InvalidCredentialsException;
 import ru.itmo.is.lab.exception.ResourceNotFoundException;
 import ru.itmo.is.lab.exception.UsernameTakenException;
@@ -187,6 +188,10 @@ public final class ErrorResponses {
         }
         if (t instanceof CarNotAvailableException) {
             return carNotAvailable(t.getMessage());
+        }
+        if (t instanceof HeroNameTakenException) {
+            HeroNameTakenException conflict = (HeroNameTakenException) t;
+            return error(409, conflict.getMessage(), Collections.singletonMap(conflict.getField(), conflict.getMessage()));
         }
         if (t instanceof UsernameTakenException) {
             return usernameTaken(t.getMessage());

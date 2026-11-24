@@ -14,12 +14,13 @@ import javax.json.JsonArray;
 import javax.json.JsonException;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
-import javax.json.JsonReader;
 import javax.json.JsonString;
 import javax.json.JsonValue;
+import javax.json.stream.JsonParser;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -45,8 +46,14 @@ public class ImportFileReader {
     }
 
     public List<Entry> read(InputStream source) {
-        try (JsonReader reader = Json.createReader(source, StandardCharsets.UTF_8)) {
-            JsonArray array = reader.readArray();
+        try (JsonParser parser = Json.createParser(new InputStreamReader(source, StandardCharsets.UTF_8.newDecoder()))) {
+            if (!parser.hasNext() || parser.next() != JsonParser.Event.START_ARRAY) {
+                throw new ImportInputException("file", "Ожидается JSON-массив в кодировке UTF-8");
+            }
+            JsonArray array = parser.getArray();
+            if (parser.hasNext()) {
+                throw new ImportInputException("file", "После JSON-массива не должно быть других данных");
+            }
             if (array.isEmpty() || array.size() > MAX_RECORDS) {
                 throw new ImportInputException("file", "Файл должен содержать от 1 до " + MAX_RECORDS + " записей");
             }

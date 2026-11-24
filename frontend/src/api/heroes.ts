@@ -40,6 +40,6 @@ export function updateHero(id: number, input: HeroUpdate): Promise<Hero> {
   return request<Hero>('PUT', `/human-beings/${id}`, { body: input });
 }
 
-export function deleteHero(id: number): Promise<void> {
-  return request<void>('DELETE', `/human-beings/${id}`);
+export function deleteHero(id: number, version: number): Promise<void> {
+  return request<void>('DELETE', `/human-beings/${id}`, { query: { version } });
 }

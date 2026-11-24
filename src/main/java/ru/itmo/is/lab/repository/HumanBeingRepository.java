@@ -124,6 +124,15 @@ public class HumanBeingRepository {
         return em.find(HumanBeing.class, id);
     }
 
+    public List<String> findNames(Long excludedId) {
+        if (excludedId == null) {
+            return em.createQuery("select h.name from HumanBeing h", String.class).getResultList();
+        }
+        return em.createQuery("select h.name from HumanBeing h where h.id <> :id", String.class)
+                .setParameter("id", excludedId)
+                .getResultList();
+    }
+
     public void persist(HumanBeing human) {
         em.persist(human);
     }

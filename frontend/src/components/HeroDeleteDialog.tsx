@@ -28,7 +28,7 @@ export function HeroDeleteDialog({ hero, onClose, onDeleted, onRemoved }: HeroDe
     setBusy(true);
     setError(null);
     try {
-      await deleteHero(hero.id);
+      await deleteHero(hero.id, hero.version);
       onDeleted();
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {

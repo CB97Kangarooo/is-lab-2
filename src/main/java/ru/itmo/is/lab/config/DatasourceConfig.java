@@ -7,9 +7,9 @@ import javax.ejb.Startup;
 @DataSourceDefinition(
         name = "java:app/jdbc/studs",
         className = "org.postgresql.ds.PGSimpleDataSource",
-        url = "jdbc:postgresql://pg:5432/studs",
-        user = "s467351",
-        password = "password"
+        url = "${lab.db.url:jdbc:postgresql://pg:5432/studs}",
+        user = "${lab.db.user:s467351}",
+        password = "${lab.db.password:password}"
 )
 @Singleton
 @Startup
