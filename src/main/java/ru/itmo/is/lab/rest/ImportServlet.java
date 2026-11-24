@@ -1,8 +1,10 @@
 package ru.itmo.is.lab.rest;
 
+import ru.itmo.is.lab.auth.SessionUser;
 import ru.itmo.is.lab.exception.ImportInputException;
 import ru.itmo.is.lab.rest.error.ErrorResponses;
 import ru.itmo.is.lab.service.ImportFileReader;
+import ru.itmo.is.lab.service.ImportHistoryService;
 import ru.itmo.is.lab.service.ImportWriteService;
 
 import javax.inject.Inject;
@@ -29,21 +31,44 @@ public class ImportServlet extends HttpServlet {
     private ImportFileReader reader;
     @Inject
     private ImportWriteService writer;
+    @Inject
+    private ImportHistoryService history;
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            int offset = QueryParams.intValue("offset", request.getParameter("offset"), 0);
+            if (offset < 0) {
+                throw new ImportInputException("offset", "Ожидается неотрицательное число");
+            }
+            write(response, 200, history.page(SessionUser.current(request), offset));
+        } catch (ImportInputException e) {
+            writeInputError(response, e, null);
+        } catch (RuntimeException e) {
+            writeError(response, ErrorResponses.resolve(e), null);
+        }
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Long id = null;
+        int count;
         try {
+            id = history.start(SessionUser.current(request));
             List<ImportFileReader.Entry> entries = readUpload(request);
-            int count = writer.save(entries);
-            write(response, 201, Json.createObjectBuilder().add("addedCount", count).build());
+            count = writer.save(id, entries);
         } catch (ImportInputException e) {
-            write(response, 400, Json.createObjectBuilder()
-                    .add("message", e.getField() + ": " + e.getMessage())
-                    .add("fieldErrors", Json.createObjectBuilder().add(e.getField(), e.getMessage()))
-                    .build());
+            history.fail(id);
+            writeInputError(response, e, id);
+            return;
         } catch (RuntimeException e) {
-            writeError(response, ErrorResponses.resolve(e));
+            if (id != null) {
+                history.fail(id);
+            }
+            writeError(response, ErrorResponses.resolve(e), id);
+            return;
         }
+        write(response, 201, Json.createObjectBuilder().add("id", id).add("addedCount", count).build());
     }
 
     private List<ImportFileReader.Entry> readUpload(HttpServletRequest request) {
@@ -62,11 +87,28 @@ public class ImportServlet extends HttpServlet {
         }
     }
 
-    private static void writeError(HttpServletResponse response, ErrorResponses.ApiError error) throws IOException {
+    private static void writeInputError(HttpServletResponse response, ImportInputException error, Long id)
+            throws IOException {
+        JsonObjectBuilder body = Json.createObjectBuilder()
+                .add("message", error.getField() + ": " + error.getMessage())
+                .add("fieldErrors", Json.createObjectBuilder().add(error.getField(), error.getMessage()));
+        write(response, 400, withOperationId(body, id));
+    }
+
+    private static void writeError(HttpServletResponse response, ErrorResponses.ApiError error, Long id)
+            throws IOException {
         JsonObjectBuilder fields = Json.createObjectBuilder();
         error.getBody().getFieldErrors().forEach(fields::add);
-        write(response, error.getStatus(), Json.createObjectBuilder()
-                .add("message", error.getBody().getMessage()).add("fieldErrors", fields).build());
+        JsonObjectBuilder body = Json.createObjectBuilder()
+                .add("message", error.getBody().getMessage()).add("fieldErrors", fields);
+        write(response, error.getStatus(), withOperationId(body, id));
+    }
+
+    private static JsonObject withOperationId(JsonObjectBuilder body, Long id) {
+        if (id != null) {
+            body.add("id", id);
+        }
+        return body.build();
     }
 
     private static void write(HttpServletResponse response, int status, JsonObject body) throws IOException {

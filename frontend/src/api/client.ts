@@ -72,14 +72,15 @@ function toApiError(status: number, data: unknown): ApiError {
 
 export async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   const hasBody = options.body !== undefined;
+  const isUpload = options.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(buildUrl(path, options.query), {
       method,
-      headers: hasBody
+      headers: hasBody && !isUpload
         ? { Accept: 'application/json', 'Content-Type': 'application/json' }
         : { Accept: 'application/json' },
-      body: hasBody ? JSON.stringify(options.body) : undefined,
+      body: isUpload ? options.body as FormData : hasBody ? JSON.stringify(options.body) : undefined,
       signal: options.signal,
     });
   } catch (error) {

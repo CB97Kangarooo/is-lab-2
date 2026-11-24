@@ -11,6 +11,7 @@
         <class>ru.itmo.is.lab.entity.HumanBeing</class>
         <class>ru.itmo.is.lab.entity.Car</class>
         <class>ru.itmo.is.lab.entity.AppUser</class>
+        <class>ru.itmo.is.lab.entity.ImportOperation</class>
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
         <validation-mode>CALLBACK</validation-mode>

@@ -2,6 +2,7 @@ import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { HeroesPage } from './pages/HeroesPage';
 import { CarsPage } from './pages/CarsPage';
 import { SpecialPage } from './pages/SpecialPage';
+import { ImportsPage } from './pages/ImportsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
@@ -11,6 +12,7 @@ const NAV = [
   { to: '/heroes', label: 'Герои' },
   { to: '/cars', label: 'Машины' },
   { to: '/special', label: 'Спецоперации' },
+  { to: '/imports', label: 'Импорт' },
 ];
 
 export function App() {
@@ -76,6 +78,7 @@ function Workspace({ username }: { username: string }) {
             <Route path="/heroes" element={<HeroesPage />} />
             <Route path="/cars" element={<CarsPage />} />
             <Route path="/special" element={<SpecialPage />} />
+            <Route path="/imports" element={<ImportsPage />} />
             <Route path="*" element={<Navigate to="/heroes" replace />} />
           </Routes>
         </main>
